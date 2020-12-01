@@ -1,6 +1,9 @@
 package co.edu.javeriana;
 
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,6 +35,10 @@ public class MavenProj extends MavenDep {
         return Command.run(String.format(MVN_META_CMD, meta), pom.getParentFile()).getOutput().get(0);
     }
 
+    public File getPom() {
+        return pom;
+    }
+
     public List<MavenDep> deps() {
         List<MavenDep> deps = new ArrayList<>();
         Result result = Command.run(String.format(MVN_DEP_CMD, pom.getAbsolutePath()), pom.getParentFile());
@@ -53,7 +60,7 @@ public class MavenProj extends MavenDep {
         scopeSet.addAll(Arrays.asList(scopes));
 
         List<File> jars = new ArrayList<>();
-        jars.addAll(getJars());
+        // jars.addAll(getJars());
         for (MavenDep dep : deps()) {
             if (scopeSet.isEmpty() || scopeSet.contains(dep.getScope())) {
                 jars.addAll(dep.getJars());
@@ -62,9 +69,31 @@ public class MavenProj extends MavenDep {
         return jars;
     }
 
+    public URLClassLoader getClassLoader() {
+        try {
+            // https://stackoverflow.com/a/6219855
+
+            List<URL> urls = new ArrayList<>();
+            urls.add(new File(pom.getParentFile(), "target/classes/").toURI().toURL());
+            urls.add(new File(pom.getParentFile(), "target/test-classes/").toURI().toURL());
+            for (File jarFile : depJars()) {
+                urls.add(jarFile.toURI().toURL());
+            }
+
+            URLClassLoader cl = new URLClassLoader(urls.toArray(new URL[0]));
+            System.out.println(cl.getURLs()[0]);
+            System.out.println(cl.getURLs()[1]);
+            return cl;
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+    }
+
     public boolean cleanInstall() {
         Result result = Command.run(MVN_CLEAN_INSTALL, pom.getParentFile());
-        System.out.println(result);
+        // System.out.println(result);
         return result.getExitCode() == 0;
     }
 

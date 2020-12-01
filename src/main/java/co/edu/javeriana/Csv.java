@@ -30,11 +30,11 @@ public class Csv {
     public void save(File file) throws IOException {
         FileWriter writer = new FileWriter(file);
         if (!columns.isEmpty()) {
-            writer.write(String.join(",", columns));
+            writer.write(String.join("\t", columns));
             writer.write('\n');
         }
         for (Collection<String> row : data) {
-            writer.write(String.join(",", row));
+            writer.write(String.join("\t", row));
             writer.write('\n');
         }
         writer.close();
