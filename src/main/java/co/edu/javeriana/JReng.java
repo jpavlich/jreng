@@ -3,6 +3,8 @@ package co.edu.javeriana;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -18,6 +20,8 @@ import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.model.resolution.TypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ClassLoaderTypeSolver;
+
+import joinery.DataFrame;
 
 /**
  * Some code that uses JavaSymbolSolver.
@@ -36,11 +40,20 @@ public class JReng {
         StaticJavaParser.getConfiguration().setSymbolResolver(symbolSolver);
         Collection<File> javas = proj.javas();
 
-        Csv nodes = new Csv();
-        nodes.setColumns("id", "type", "subtype");
-        Csv connections = new Csv();
-        connections.setColumns("src", "dst", "type");
+        // Csv nodes = new Csv();
+        // nodes.setColumns("id", "type", "subtype");
+        // Csv connections = new Csv();
+        // connections.setColumns("src", "dst", "type");
 
+        // List<List<String>> nodes = new ArrayList<>();
+        // nodes.add(Arrays.asList("id", "type", "subtype"));
+        // List<List<String>> connections = new ArrayList<>();
+        // connections.add(Arrays.asList("src", "dst", "type"));
+
+        DataFrame<String> nodesDf = new DataFrame<>("id", "type", "subtype");
+        DataFrame<String> connectionsDf = new DataFrame<>("src", "dst", "type");
+
+        int i = 0;
         System.out.println("Extracting static dependencies");
         for (File javaFile : javas) {
             CompilationUnit cu = StaticJavaParser.parse(javaFile);
@@ -48,12 +61,12 @@ public class JReng {
             for (ClassOrInterfaceDeclaration c : classes) {
                 String cname = c.resolve().getQualifiedName();
 
-                nodes.addRow(cname, c.isInterface() ? "I" : "C", "");
+                nodesDf.append(i++, Arrays.asList(cname, c.isInterface() ? "I" : "C", ""));
                 System.out.println(cname);
-                List<MethodDeclaration> methods = c.findAll(MethodDeclaration.class);
+                List<MethodDeclaration> methods = c.getMethods();
                 for (MethodDeclaration m : methods) {
                     String mname = m.resolve().getQualifiedSignature();
-                    nodes.addRow(mname, "M", "");
+                    nodesDf.append(i++, Arrays.asList(mname, "M", ""));
                     System.out.println("\t" + mname);
                     List<ClassOrInterfaceType> types = m.findAll(ClassOrInterfaceType.class);
                     for (ClassOrInterfaceType t : types) {
@@ -61,14 +74,14 @@ public class JReng {
                         try {
                             ResolvedReferenceType rt = t.resolve();
                             tname = rt.getQualifiedName();
-                            nodes.addRow(tname, rt.getTypeDeclaration().get().isInterface() ? "I" : "C", "");
+                            nodesDf.append(i++, Arrays.asList(tname, rt.getTypeDeclaration().get().isInterface() ? "I" : "C", ""));
                         } catch (UnsupportedOperationException e) {
                             tname = t.getNameWithScope();
-                            nodes.addRow(tname, t.getMetaModel().getTypeName(), "");
+                            nodesDf.append(i++, Arrays.asList(tname, t.getMetaModel().getTypeName(), ""));
                         } catch (UnsolvedSymbolException e) {
                             System.out.println(e);
                             tname = t.getNameWithScope();
-                            nodes.addRow(tname, t.getMetaModel().getTypeName(), "");
+                            nodesDf.append(i++, Arrays.asList(tname, t.getMetaModel().getTypeName(), ""));
                         }
                         System.out.println("\t\t" + tname);
                     }
@@ -76,28 +89,17 @@ public class JReng {
                     for (MethodCallExpr call : calls) {
                         ResolvedMethodDeclaration rm = call.resolve();
                         String rmname = rm.getQualifiedSignature();
-                        nodes.addRow(rmname, "M", "");
+                        nodesDf.append(i++, Arrays.asList(rmname, "M", ""));
                         System.out.println("\t\t" + rm.getQualifiedSignature());
                     }
                 }
             }
         }
 
-        nodes.save(new File("tmp/nodes.csv"));
-        connections.save(new File("tmp/connections.csv"));
 
-        // Parse some code
-        // CompilationUnit cu = StaticJavaParser.parse("class X { int x() { return 1 +
-        // 1.0 - 5; } }");
 
-        // Find all the calculations with two sides:
-        // cu.findAll(BinaryExpr.class).forEach(be -> {
-        // // Find out what type it has:
-        // ResolvedType resolvedType = be.calculateResolvedType();
-
-        // // Show that it's "double" in every case:
-        // System.out.println(be.toString() + " is a: " + resolvedType);
-        // });
+        nodesDf.writeCsv("tmp/nodes.csv");
+        connectionsDf.writeCsv("tmp/connections.csv");
     }
 
     private static void build(MavenProj proj) {
