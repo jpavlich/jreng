@@ -1,4 +1,4 @@
-package co.edu.javeriana;
+package co.edu.javeriana.jreng;
 
 import java.io.File;
 import java.util.Collection;

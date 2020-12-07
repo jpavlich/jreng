@@ -1,4 +1,4 @@
-package co.edu.javeriana;
+package co.edu.javeriana.jreng;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -14,7 +14,7 @@ import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 
-import co.edu.javeriana.Command.Result;
+import co.edu.javeriana.jreng.Command.Result;
 
 public class MavenProj extends MavenDep {
 
@@ -91,10 +91,11 @@ public class MavenProj extends MavenDep {
 
     }
 
-    public boolean cleanInstall() {
+    public void cleanInstall() throws BuildException {
         Result result = Command.run(MVN_CLEAN_INSTALL, pom.getParentFile());
-        // System.out.println(result);
-        return result.getExitCode() == 0;
+        if (result.getExitCode() != 0) {
+            throw new BuildException(result.toString());
+        }
     }
 
     private Optional<MavenDep> parse(String line) {

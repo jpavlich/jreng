@@ -1,4 +1,4 @@
-package co.edu.javeriana;
+package co.edu.javeriana.jreng;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,9 +28,19 @@ import joinery.DataFrame;
  */
 public class JReng {
 
-    public static void main(String[] args) throws IOException {
-        MavenProj proj = new MavenProj(new File("../spring-petclinic/pom.xml"));
-        // build(proj);
+    private String pomPath;
+    private boolean cleanInstall;
+
+    public JReng(String pomPath, boolean cleanInstall) {
+        this.pomPath = pomPath;
+        this.cleanInstall = cleanInstall;
+    }
+
+    private MavenProj setup() throws BuildException {
+        MavenProj proj = new MavenProj(new File(pomPath));
+        if (cleanInstall) {
+            proj.cleanInstall();
+        }
         System.out.println("Finding jars");
         URLClassLoader cl = proj.getClassLoader();
         TypeSolver typeSolver = new ClassLoaderTypeSolver(cl);
@@ -38,17 +48,32 @@ public class JReng {
 
         JavaSymbolSolver symbolSolver = new JavaSymbolSolver(typeSolver);
         StaticJavaParser.getConfiguration().setSymbolResolver(symbolSolver);
+        return proj;
+    }
+
+    public void process() throws IOException, BuildException {
+        MavenProj proj = setup();
+
         Collection<File> javas = proj.javas();
 
-        // Csv nodes = new Csv();
-        // nodes.setColumns("id", "type", "subtype");
-        // Csv connections = new Csv();
-        // connections.setColumns("src", "dst", "type");
+        DataFrame<String> nodesDf = new DataFrame<>("id", "type", "subtype");
+        DataFrame<String> connectionsDf = new DataFrame<>("src", "dst", "type");
 
-        // List<List<String>> nodes = new ArrayList<>();
-        // nodes.add(Arrays.asList("id", "type", "subtype"));
-        // List<List<String>> connections = new ArrayList<>();
-        // connections.add(Arrays.asList("src", "dst", "type"));
+        JVisitor v = new JVisitor() {
+            
+        };
+
+        System.out.println("Extracting static dependencies");
+        for (File javaFile : javas) {
+            CompilationUnit cu = StaticJavaParser.parse(javaFile);
+            v.dispatch(cu, 0);
+        }
+    }
+
+    public boolean process2() throws IOException, BuildException {
+        MavenProj proj = setup();
+
+        Collection<File> javas = proj.javas();
 
         DataFrame<String> nodesDf = new DataFrame<>("id", "type", "subtype");
         DataFrame<String> connectionsDf = new DataFrame<>("src", "dst", "type");
@@ -74,7 +99,8 @@ public class JReng {
                         try {
                             ResolvedReferenceType rt = t.resolve();
                             tname = rt.getQualifiedName();
-                            nodesDf.append(i++, Arrays.asList(tname, rt.getTypeDeclaration().get().isInterface() ? "I" : "C", ""));
+                            nodesDf.append(i++,
+                                    Arrays.asList(tname, rt.getTypeDeclaration().get().isInterface() ? "I" : "C", ""));
                         } catch (UnsupportedOperationException e) {
                             tname = t.getNameWithScope();
                             nodesDf.append(i++, Arrays.asList(tname, t.getMetaModel().getTypeName(), ""));
@@ -96,17 +122,14 @@ public class JReng {
             }
         }
 
-
-
         nodesDf.writeCsv("tmp/nodes.csv");
         connectionsDf.writeCsv("tmp/connections.csv");
+        return true;
     }
 
     private static void build(MavenProj proj) {
         System.out.println("Building project " + proj.getPom().getAbsolutePath());
-        boolean success = proj.cleanInstall();
-        if (!success) {
-            return;
-        }
+
     }
+
 }
