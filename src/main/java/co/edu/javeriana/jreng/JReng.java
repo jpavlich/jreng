@@ -51,26 +51,7 @@ public class JReng {
         return proj;
     }
 
-    public void process() throws IOException, BuildException {
-        MavenProj proj = setup();
-
-        Collection<File> javas = proj.javas();
-
-        DataFrame<String> nodesDf = new DataFrame<>("id", "type", "subtype");
-        DataFrame<String> connectionsDf = new DataFrame<>("src", "dst", "type");
-
-        JVisitor v = new JVisitor() {
-            
-        };
-
-        System.out.println("Extracting static dependencies");
-        for (File javaFile : javas) {
-            CompilationUnit cu = StaticJavaParser.parse(javaFile);
-            v.dispatch(cu, 0);
-        }
-    }
-
-    public boolean process2() throws IOException, BuildException {
+    public boolean process() throws IOException, BuildException {
         MavenProj proj = setup();
 
         Collection<File> javas = proj.javas();
@@ -123,7 +104,7 @@ public class JReng {
         }
 
         nodesDf.writeCsv("tmp/nodes.csv");
-        connectionsDf.writeCsv("tmp/connections.csv");
+        // connectionsDf.writeCsv("tmp/connections.csv");
         return true;
     }
 
