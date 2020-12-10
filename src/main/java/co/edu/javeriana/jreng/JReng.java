@@ -3,7 +3,6 @@ package co.edu.javeriana.jreng;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -21,6 +20,8 @@ import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.model.resolution.TypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ClassLoaderTypeSolver;
 
+import co.edu.javeriana.jreng.proj.BuildException;
+import co.edu.javeriana.jreng.proj.MavenProj;
 import joinery.DataFrame;
 
 /**

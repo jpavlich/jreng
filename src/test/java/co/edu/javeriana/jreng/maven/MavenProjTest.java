@@ -1,4 +1,4 @@
-package co.edu.javeriana.jreng;
+package co.edu.javeriana.jreng.maven;
 
 import static org.junit.Assert.assertTrue;
 
@@ -6,6 +6,9 @@ import java.io.File;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import co.edu.javeriana.jreng.proj.MavenDep;
+import co.edu.javeriana.jreng.proj.MavenProj;
 
 public class MavenProjTest {
 

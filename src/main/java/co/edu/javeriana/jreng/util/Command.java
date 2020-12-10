@@ -1,4 +1,4 @@
-package co.edu.javeriana.jreng;
+package co.edu.javeriana.jreng.util;
 
 import java.io.BufferedReader;
 import java.io.File;

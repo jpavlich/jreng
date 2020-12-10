@@ -1,4 +1,4 @@
-package co.edu.javeriana.jreng;
+package co.edu.javeriana.jreng.proj;
 
 public class BuildException extends Exception {
 

@@ -1,4 +1,4 @@
-package co.edu.javeriana.jreng;
+package co.edu.javeriana.jreng.proj;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -14,7 +14,8 @@ import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 
-import co.edu.javeriana.jreng.Command.Result;
+import co.edu.javeriana.jreng.util.Command;
+import co.edu.javeriana.jreng.util.Command.Result;
 
 public class MavenProj extends MavenDep {
 
