@@ -21,6 +21,7 @@ import com.github.javaparser.ast.body.InitializerDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.ReceiverParameter;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.comments.BlockComment;
 import com.github.javaparser.ast.comments.JavadocComment;
@@ -104,715 +105,740 @@ import com.github.javaparser.ast.type.WildcardType;
 import com.github.javaparser.ast.visitor.GenericVisitor;
 import com.github.javaparser.ast.visitor.Visitable;
 
-public class JVisitor implements GenericVisitor<Visitable, Integer> {
+public class JVisitor implements GenericVisitor<Visitable, Visitable> {
 
     @FunctionalInterface
     private interface VisitorFunction<V, A, S> {
-        S apply(V v, A lvl);
+        S apply(V v, A src);
     }
 
-    private Map<Class<? extends Visitable>, VisitorFunction<? extends Visitable, ? extends Integer, ? extends Visitable>> dispatcher = new HashMap<>();
+    private Map<Class<? extends Visitable>, VisitorFunction<? extends Visitable, ? extends Visitable, ? extends Visitable>> dispatcher = new HashMap<>();
 
     public JVisitor() {
-        dispatcher.put(CompilationUnit.class, (CompilationUnit v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(PackageDeclaration.class, (PackageDeclaration v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(TypeParameter.class, (TypeParameter v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(LineComment.class, (LineComment v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(BlockComment.class, (BlockComment v, Integer lvl) -> visit(v, lvl));
+        dispatcher.put(CompilationUnit.class, (CompilationUnit v, Visitable src) -> visit(v, src));
+        dispatcher.put(PackageDeclaration.class, (PackageDeclaration v, Visitable src) -> visit(v, src));
+        dispatcher.put(TypeParameter.class, (TypeParameter v, Visitable src) -> visit(v, src));
+        dispatcher.put(LineComment.class, (LineComment v, Visitable src) -> visit(v, src));
+        dispatcher.put(BlockComment.class, (BlockComment v, Visitable src) -> visit(v, src));
         dispatcher.put(ClassOrInterfaceDeclaration.class,
-                (ClassOrInterfaceDeclaration v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(EnumDeclaration.class, (EnumDeclaration v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(EnumConstantDeclaration.class, (EnumConstantDeclaration v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(AnnotationDeclaration.class, (AnnotationDeclaration v, Integer lvl) -> visit(v, lvl));
+                (ClassOrInterfaceDeclaration v, Visitable src) -> visit(v, src));
+        dispatcher.put(EnumDeclaration.class, (EnumDeclaration v, Visitable src) -> visit(v, src));
+        dispatcher.put(EnumConstantDeclaration.class, (EnumConstantDeclaration v, Visitable src) -> visit(v, src));
+        dispatcher.put(AnnotationDeclaration.class, (AnnotationDeclaration v, Visitable src) -> visit(v, src));
         dispatcher.put(AnnotationMemberDeclaration.class,
-                (AnnotationMemberDeclaration v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(FieldDeclaration.class, (FieldDeclaration v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(VariableDeclarator.class, (VariableDeclarator v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ConstructorDeclaration.class, (ConstructorDeclaration v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(MethodDeclaration.class, (MethodDeclaration v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(Parameter.class, (Parameter v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(InitializerDeclaration.class, (InitializerDeclaration v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(JavadocComment.class, (JavadocComment v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ClassOrInterfaceType.class, (ClassOrInterfaceType v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(PrimitiveType.class, (PrimitiveType v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ArrayType.class, (ArrayType v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ArrayCreationLevel.class, (ArrayCreationLevel v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(IntersectionType.class, (IntersectionType v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(UnionType.class, (UnionType v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(VoidType.class, (VoidType v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(WildcardType.class, (WildcardType v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(UnknownType.class, (UnknownType v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ArrayAccessExpr.class, (ArrayAccessExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ArrayCreationExpr.class, (ArrayCreationExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ArrayInitializerExpr.class, (ArrayInitializerExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(AssignExpr.class, (AssignExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(BinaryExpr.class, (BinaryExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(CastExpr.class, (CastExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ClassExpr.class, (ClassExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ConditionalExpr.class, (ConditionalExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(EnclosedExpr.class, (EnclosedExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(FieldAccessExpr.class, (FieldAccessExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(InstanceOfExpr.class, (InstanceOfExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(StringLiteralExpr.class, (StringLiteralExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(IntegerLiteralExpr.class, (IntegerLiteralExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(LongLiteralExpr.class, (LongLiteralExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(CharLiteralExpr.class, (CharLiteralExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(DoubleLiteralExpr.class, (DoubleLiteralExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(BooleanLiteralExpr.class, (BooleanLiteralExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(NullLiteralExpr.class, (NullLiteralExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(MethodCallExpr.class, (MethodCallExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(NameExpr.class, (NameExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ObjectCreationExpr.class, (ObjectCreationExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ThisExpr.class, (ThisExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(SuperExpr.class, (SuperExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(UnaryExpr.class, (UnaryExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(VariableDeclarationExpr.class, (VariableDeclarationExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(MarkerAnnotationExpr.class, (MarkerAnnotationExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(SingleMemberAnnotationExpr.class, (SingleMemberAnnotationExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(NormalAnnotationExpr.class, (NormalAnnotationExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(MemberValuePair.class, (MemberValuePair v, Integer lvl) -> visit(v, lvl));
+                (AnnotationMemberDeclaration v, Visitable src) -> visit(v, src));
+        dispatcher.put(FieldDeclaration.class, (FieldDeclaration v, Visitable src) -> visit(v, src));
+        dispatcher.put(VariableDeclarator.class, (VariableDeclarator v, Visitable src) -> visit(v, src));
+        dispatcher.put(ConstructorDeclaration.class, (ConstructorDeclaration v, Visitable src) -> visit(v, src));
+        dispatcher.put(MethodDeclaration.class, (MethodDeclaration v, Visitable src) -> visit(v, src));
+        dispatcher.put(Parameter.class, (Parameter v, Visitable src) -> visit(v, src));
+        dispatcher.put(InitializerDeclaration.class, (InitializerDeclaration v, Visitable src) -> visit(v, src));
+        dispatcher.put(JavadocComment.class, (JavadocComment v, Visitable src) -> visit(v, src));
+        dispatcher.put(ClassOrInterfaceType.class, (ClassOrInterfaceType v, Visitable src) -> visit(v, src));
+        dispatcher.put(PrimitiveType.class, (PrimitiveType v, Visitable src) -> visit(v, src));
+        dispatcher.put(ArrayType.class, (ArrayType v, Visitable src) -> visit(v, src));
+        dispatcher.put(ArrayCreationLevel.class, (ArrayCreationLevel v, Visitable src) -> visit(v, src));
+        dispatcher.put(IntersectionType.class, (IntersectionType v, Visitable src) -> visit(v, src));
+        dispatcher.put(UnionType.class, (UnionType v, Visitable src) -> visit(v, src));
+        dispatcher.put(VoidType.class, (VoidType v, Visitable src) -> visit(v, src));
+        dispatcher.put(WildcardType.class, (WildcardType v, Visitable src) -> visit(v, src));
+        dispatcher.put(UnknownType.class, (UnknownType v, Visitable src) -> visit(v, src));
+        dispatcher.put(ArrayAccessExpr.class, (ArrayAccessExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(ArrayCreationExpr.class, (ArrayCreationExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(ArrayInitializerExpr.class, (ArrayInitializerExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(AssignExpr.class, (AssignExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(BinaryExpr.class, (BinaryExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(CastExpr.class, (CastExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(ClassExpr.class, (ClassExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(ConditionalExpr.class, (ConditionalExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(EnclosedExpr.class, (EnclosedExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(FieldAccessExpr.class, (FieldAccessExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(InstanceOfExpr.class, (InstanceOfExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(StringLiteralExpr.class, (StringLiteralExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(IntegerLiteralExpr.class, (IntegerLiteralExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(LongLiteralExpr.class, (LongLiteralExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(CharLiteralExpr.class, (CharLiteralExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(DoubleLiteralExpr.class, (DoubleLiteralExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(BooleanLiteralExpr.class, (BooleanLiteralExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(NullLiteralExpr.class, (NullLiteralExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(MethodCallExpr.class, (MethodCallExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(NameExpr.class, (NameExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(ObjectCreationExpr.class, (ObjectCreationExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(ThisExpr.class, (ThisExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(SuperExpr.class, (SuperExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(UnaryExpr.class, (UnaryExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(VariableDeclarationExpr.class, (VariableDeclarationExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(MarkerAnnotationExpr.class, (MarkerAnnotationExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(SingleMemberAnnotationExpr.class,
+                (SingleMemberAnnotationExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(NormalAnnotationExpr.class, (NormalAnnotationExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(MemberValuePair.class, (MemberValuePair v, Visitable src) -> visit(v, src));
         dispatcher.put(ExplicitConstructorInvocationStmt.class,
-                (ExplicitConstructorInvocationStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(LocalClassDeclarationStmt.class, (LocalClassDeclarationStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(AssertStmt.class, (AssertStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(BlockStmt.class, (BlockStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(LabeledStmt.class, (LabeledStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(EmptyStmt.class, (EmptyStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ExpressionStmt.class, (ExpressionStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(SwitchStmt.class, (SwitchStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(SwitchEntry.class, (SwitchEntry v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(BreakStmt.class, (BreakStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ReturnStmt.class, (ReturnStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(IfStmt.class, (IfStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(WhileStmt.class, (WhileStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ContinueStmt.class, (ContinueStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(DoStmt.class, (DoStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ForEachStmt.class, (ForEachStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ForStmt.class, (ForStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ThrowStmt.class, (ThrowStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(SynchronizedStmt.class, (SynchronizedStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(TryStmt.class, (TryStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(CatchClause.class, (CatchClause v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(LambdaExpr.class, (LambdaExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(MethodReferenceExpr.class, (MethodReferenceExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(TypeExpr.class, (TypeExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(NodeList.class, (NodeList v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(Name.class, (Name v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(SimpleName.class, (SimpleName v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ImportDeclaration.class, (ImportDeclaration v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ModuleDeclaration.class, (ModuleDeclaration v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ModuleRequiresDirective.class, (ModuleRequiresDirective v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ModuleExportsDirective.class, (ModuleExportsDirective v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ModuleProvidesDirective.class, (ModuleProvidesDirective v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ModuleUsesDirective.class, (ModuleUsesDirective v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ModuleOpensDirective.class, (ModuleOpensDirective v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(UnparsableStmt.class, (UnparsableStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(ReceiverParameter.class, (ReceiverParameter v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(VarType.class, (VarType v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(Modifier.class, (Modifier v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(SwitchExpr.class, (SwitchExpr v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(YieldStmt.class, (YieldStmt v, Integer lvl) -> visit(v, lvl));
-        dispatcher.put(TextBlockLiteralExpr.class, (TextBlockLiteralExpr v, Integer lvl) -> visit(v, lvl));
+                (ExplicitConstructorInvocationStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(LocalClassDeclarationStmt.class, (LocalClassDeclarationStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(AssertStmt.class, (AssertStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(BlockStmt.class, (BlockStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(LabeledStmt.class, (LabeledStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(EmptyStmt.class, (EmptyStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(ExpressionStmt.class, (ExpressionStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(SwitchStmt.class, (SwitchStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(SwitchEntry.class, (SwitchEntry v, Visitable src) -> visit(v, src));
+        dispatcher.put(BreakStmt.class, (BreakStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(ReturnStmt.class, (ReturnStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(IfStmt.class, (IfStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(WhileStmt.class, (WhileStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(ContinueStmt.class, (ContinueStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(DoStmt.class, (DoStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(ForEachStmt.class, (ForEachStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(ForStmt.class, (ForStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(ThrowStmt.class, (ThrowStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(SynchronizedStmt.class, (SynchronizedStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(TryStmt.class, (TryStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(CatchClause.class, (CatchClause v, Visitable src) -> visit(v, src));
+        dispatcher.put(LambdaExpr.class, (LambdaExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(MethodReferenceExpr.class, (MethodReferenceExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(TypeExpr.class, (TypeExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(NodeList.class, (NodeList v, Visitable src) -> visit(v, src));
+        dispatcher.put(Name.class, (Name v, Visitable src) -> visit(v, src));
+        dispatcher.put(SimpleName.class, (SimpleName v, Visitable src) -> visit(v, src));
+        dispatcher.put(ImportDeclaration.class, (ImportDeclaration v, Visitable src) -> visit(v, src));
+        dispatcher.put(ModuleDeclaration.class, (ModuleDeclaration v, Visitable src) -> visit(v, src));
+        dispatcher.put(ModuleRequiresDirective.class, (ModuleRequiresDirective v, Visitable src) -> visit(v, src));
+        dispatcher.put(ModuleExportsDirective.class, (ModuleExportsDirective v, Visitable src) -> visit(v, src));
+        dispatcher.put(ModuleProvidesDirective.class, (ModuleProvidesDirective v, Visitable src) -> visit(v, src));
+        dispatcher.put(ModuleUsesDirective.class, (ModuleUsesDirective v, Visitable src) -> visit(v, src));
+        dispatcher.put(ModuleOpensDirective.class, (ModuleOpensDirective v, Visitable src) -> visit(v, src));
+        dispatcher.put(UnparsableStmt.class, (UnparsableStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(ReceiverParameter.class, (ReceiverParameter v, Visitable src) -> visit(v, src));
+        dispatcher.put(VarType.class, (VarType v, Visitable src) -> visit(v, src));
+        dispatcher.put(Modifier.class, (Modifier v, Visitable src) -> visit(v, src));
+        dispatcher.put(SwitchExpr.class, (SwitchExpr v, Visitable src) -> visit(v, src));
+        dispatcher.put(YieldStmt.class, (YieldStmt v, Visitable src) -> visit(v, src));
+        dispatcher.put(TextBlockLiteralExpr.class, (TextBlockLiteralExpr v, Visitable src) -> visit(v, src));
     }
 
-    public Node dispatch(Node n, Integer level) {
-        VisitorFunction<Node, Integer, Node> f = (VisitorFunction<Node, Integer, Node>) dispatcher.get(n.getClass());
-        Node node = f.apply(n, level);
-        visitChildren(n, level);
+    public Node dispatch(Node n, Visitable src) {
+        VisitorFunction<Node, Visitable, Node> f = (VisitorFunction<Node, Visitable, Node>) dispatcher
+                .get(n.getClass());
+        Node node = f.apply(n, src);
+        visitChildren(n, src);
         return node;
     }
 
-    protected void visitChildren(Node n, Integer level) {
+    protected Visitable visitChildren(Node n, Visitable src) {
         for (Node ch : n.getChildNodes()) {
-            dispatch(ch, level + 1);
+            dispatch(ch, src);
         }
+        return n;
     }
 
-    protected void print(Visitable n, Integer level) {
-        for (int i = 0; i < level; i++) {
-            System.out.print("\t");
+    protected String getName(Visitable v) {
+        if (v == null) {
+            return "";
         }
-        System.out.print(n.getClass().getSimpleName());
-        if (n instanceof NodeWithName) {
-            System.out.println(": " + ((NodeWithName<?>)n).getName().getIdentifier());
-        } else {
-            System.out.println();
+        String name = "";
+        if (v instanceof TypeDeclaration) {
+            name += ((TypeDeclaration<?>) v).resolve().getQualifiedName();
         }
+        if (v instanceof MethodDeclaration) {
+            name += ((MethodDeclaration) v).resolve().getQualifiedName();
+        }
+        if (v instanceof NodeWithName) {
+            name += ((NodeWithName<?>) v).getName().getIdentifier();
+        }
+
+
+        name += ":" + v.getClass().getSimpleName();
+        return name;
+
     }
 
+    protected void print(Visitable v, Visitable src) {
+        if (v instanceof Node) {
+            Node n = (Node) v;
+            while (n.getParentNode().isPresent()) {
+                System.out.print("\t");
+                n = n.getParentNode().get();
+            }
+        }
+        System.out.println(getName(v));
+        // System.out.println(getName(src) + " -> " + getName(v));
+
+    }
+
     @Override
-    public Visitable visit(CompilationUnit n, Integer level) {
-        print(n, level);
+    public Visitable visit(CompilationUnit n, Visitable src) {
+        print(n, src);
         return n;
-    } 
+    }
 
     @Override
-    public Visitable visit(PackageDeclaration n, Integer level) {
-        print(n, level);
+    public Visitable visit(PackageDeclaration n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(TypeParameter n, Integer level) {
-        print(n, level);
+    public Visitable visit(TypeParameter n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(LineComment n, Integer level) {
-        print(n, level);
+    public Visitable visit(LineComment n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(BlockComment n, Integer level) {
-        print(n, level);
+    public Visitable visit(BlockComment n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ClassOrInterfaceDeclaration n, Integer level) {
-        print(n, level);
+    public Visitable visit(ClassOrInterfaceDeclaration n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(EnumDeclaration n, Integer level) {
-        print(n, level);
+    public Visitable visit(EnumDeclaration n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(EnumConstantDeclaration n, Integer level) {
-        print(n, level);
+    public Visitable visit(EnumConstantDeclaration n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(AnnotationDeclaration n, Integer level) {
-        print(n, level);
+    public Visitable visit(AnnotationDeclaration n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(AnnotationMemberDeclaration n, Integer level) {
-        print(n, level);
+    public Visitable visit(AnnotationMemberDeclaration n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(FieldDeclaration n, Integer level) {
-        print(n, level);
+    public Visitable visit(FieldDeclaration n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(VariableDeclarator n, Integer level) {
-        print(n, level);
+    public Visitable visit(VariableDeclarator n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ConstructorDeclaration n, Integer level) {
-        print(n, level);
+    public Visitable visit(ConstructorDeclaration n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(MethodDeclaration n, Integer level) {
-        print(n, level);
+    public Visitable visit(MethodDeclaration n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(Parameter n, Integer level) {
-        print(n, level);
+    public Visitable visit(Parameter n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(InitializerDeclaration n, Integer level) {
-        print(n, level);
+    public Visitable visit(InitializerDeclaration n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(JavadocComment n, Integer level) {
-        print(n, level);
+    public Visitable visit(JavadocComment n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ClassOrInterfaceType n, Integer level) {
-        print(n, level);
+    public Visitable visit(ClassOrInterfaceType n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(PrimitiveType n, Integer level) {
-        print(n, level);
+    public Visitable visit(PrimitiveType n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ArrayType n, Integer level) {
-        print(n, level);
+    public Visitable visit(ArrayType n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ArrayCreationLevel n, Integer level) {
-        print(n, level);
+    public Visitable visit(ArrayCreationLevel n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(IntersectionType n, Integer level) {
-        print(n, level);
+    public Visitable visit(IntersectionType n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(UnionType n, Integer level) {
-        print(n, level);
+    public Visitable visit(UnionType n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(VoidType n, Integer level) {
-        print(n, level);
+    public Visitable visit(VoidType n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(WildcardType n, Integer level) {
-        print(n, level);
+    public Visitable visit(WildcardType n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(UnknownType n, Integer level) {
-        print(n, level);
+    public Visitable visit(UnknownType n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ArrayAccessExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(ArrayAccessExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ArrayCreationExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(ArrayCreationExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ArrayInitializerExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(ArrayInitializerExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(AssignExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(AssignExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(BinaryExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(BinaryExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(CastExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(CastExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ClassExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(ClassExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ConditionalExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(ConditionalExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(EnclosedExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(EnclosedExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(FieldAccessExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(FieldAccessExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(InstanceOfExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(InstanceOfExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(StringLiteralExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(StringLiteralExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(IntegerLiteralExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(IntegerLiteralExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(LongLiteralExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(LongLiteralExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(CharLiteralExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(CharLiteralExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(DoubleLiteralExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(DoubleLiteralExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(BooleanLiteralExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(BooleanLiteralExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(NullLiteralExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(NullLiteralExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(MethodCallExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(MethodCallExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(NameExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(NameExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ObjectCreationExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(ObjectCreationExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ThisExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(ThisExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(SuperExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(SuperExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(UnaryExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(UnaryExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(VariableDeclarationExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(VariableDeclarationExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(MarkerAnnotationExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(MarkerAnnotationExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(SingleMemberAnnotationExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(SingleMemberAnnotationExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(NormalAnnotationExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(NormalAnnotationExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(MemberValuePair n, Integer level) {
-        print(n, level);
+    public Visitable visit(MemberValuePair n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ExplicitConstructorInvocationStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(ExplicitConstructorInvocationStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(LocalClassDeclarationStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(LocalClassDeclarationStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(AssertStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(AssertStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(BlockStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(BlockStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(LabeledStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(LabeledStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(EmptyStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(EmptyStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ExpressionStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(ExpressionStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(SwitchStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(SwitchStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(SwitchEntry n, Integer level) {
-        print(n, level);
+    public Visitable visit(SwitchEntry n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(BreakStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(BreakStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ReturnStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(ReturnStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(IfStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(IfStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(WhileStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(WhileStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ContinueStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(ContinueStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(DoStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(DoStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ForEachStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(ForEachStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ForStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(ForStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ThrowStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(ThrowStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(SynchronizedStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(SynchronizedStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(TryStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(TryStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(CatchClause n, Integer level) {
-        print(n, level);
+    public Visitable visit(CatchClause n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(LambdaExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(LambdaExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(MethodReferenceExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(MethodReferenceExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(TypeExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(TypeExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(NodeList n, Integer level) {
-        print(n, level);
+    public Visitable visit(NodeList n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(Name n, Integer level) {
-        print(n, level);
+    public Visitable visit(Name n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(SimpleName n, Integer level) {
-        print(n, level);
+    public Visitable visit(SimpleName n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ImportDeclaration n, Integer level) {
-        print(n, level);
+    public Visitable visit(ImportDeclaration n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ModuleDeclaration n, Integer level) {
-        print(n, level);
+    public Visitable visit(ModuleDeclaration n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ModuleRequiresDirective n, Integer level) {
-        print(n, level);
+    public Visitable visit(ModuleRequiresDirective n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ModuleExportsDirective n, Integer level) {
-        print(n, level);
+    public Visitable visit(ModuleExportsDirective n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ModuleProvidesDirective n, Integer level) {
-        print(n, level);
+    public Visitable visit(ModuleProvidesDirective n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ModuleUsesDirective n, Integer level) {
-        print(n, level);
+    public Visitable visit(ModuleUsesDirective n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ModuleOpensDirective n, Integer level) {
-        print(n, level);
+    public Visitable visit(ModuleOpensDirective n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(UnparsableStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(UnparsableStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(ReceiverParameter n, Integer level) {
-        print(n, level);
+    public Visitable visit(ReceiverParameter n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(VarType n, Integer level) {
-        print(n, level);
+    public Visitable visit(VarType n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(Modifier n, Integer level) {
-        print(n, level);
+    public Visitable visit(Modifier n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(SwitchExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(SwitchExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(YieldStmt n, Integer level) {
-        print(n, level);
+    public Visitable visit(YieldStmt n, Visitable src) {
+        print(n, src);
         return n;
     }
 
     @Override
-    public Visitable visit(TextBlockLiteralExpr n, Integer level) {
-        print(n, level);
+    public Visitable visit(TextBlockLiteralExpr n, Visitable src) {
+        print(n, src);
         return n;
     }
 

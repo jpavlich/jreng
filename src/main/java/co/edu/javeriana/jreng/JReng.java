@@ -59,14 +59,12 @@ public class JReng {
         DataFrame<String> nodesDf = new DataFrame<>("id", "type", "subtype");
         DataFrame<String> connectionsDf = new DataFrame<>("src", "dst", "type");
 
-        JVisitor v = new JVisitor() {
-            
-        };
+        JVisitor v = new DepVisitor();
 
         System.out.println("Extracting static dependencies");
         for (File javaFile : javas) {
             CompilationUnit cu = StaticJavaParser.parse(javaFile);
-            v.dispatch(cu, 0);
+            v.dispatch(cu, null);
         }
     }
 
