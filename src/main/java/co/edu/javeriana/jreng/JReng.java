@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
@@ -20,9 +22,12 @@ import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.model.resolution.TypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ClassLoaderTypeSolver;
 
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 import co.edu.javeriana.jreng.proj.BuildException;
 import co.edu.javeriana.jreng.proj.MavenProj;
-import joinery.DataFrame;
+import co.edu.javeriana.jreng.util.ExcelUtil;
 
 /**
  * Some code that uses JavaSymbolSolver.
@@ -57,10 +62,10 @@ public class JReng {
 
         Collection<File> javas = proj.javas();
 
-        DataFrame<String> nodesDf = new DataFrame<>("id", "type", "subtype");
-        DataFrame<String> connectionsDf = new DataFrame<>("src", "dst", "type");
+        // DataFrame<String> connectionsDf = new DataFrame<>("src", "dst", "type");
+        Set<List<String>> nodes = new HashSet<>();
+        Set<List<String>> connections = new HashSet<>();
 
-        int i = 0;
         System.out.println("Extracting static dependencies");
         for (File javaFile : javas) {
             CompilationUnit cu = StaticJavaParser.parse(javaFile);
@@ -68,12 +73,12 @@ public class JReng {
             for (ClassOrInterfaceDeclaration c : classes) {
                 String cname = c.resolve().getQualifiedName();
 
-                nodesDf.append(i++, Arrays.asList(cname, c.isInterface() ? "I" : "C", ""));
+                nodes.add(Arrays.asList(cname, c.isInterface() ? "I" : "C", ""));
                 System.out.println(cname);
                 List<MethodDeclaration> methods = c.getMethods();
                 for (MethodDeclaration m : methods) {
                     String mname = m.resolve().getQualifiedSignature();
-                    nodesDf.append(i++, Arrays.asList(mname, "M", ""));
+                    nodes.add(Arrays.asList(mname, "M", ""));
                     System.out.println("\t" + mname);
                     List<ClassOrInterfaceType> types = m.findAll(ClassOrInterfaceType.class);
                     for (ClassOrInterfaceType t : types) {
@@ -81,15 +86,15 @@ public class JReng {
                         try {
                             ResolvedReferenceType rt = t.resolve();
                             tname = rt.getQualifiedName();
-                            nodesDf.append(i++,
+                            nodes.add(
                                     Arrays.asList(tname, rt.getTypeDeclaration().get().isInterface() ? "I" : "C", ""));
                         } catch (UnsupportedOperationException e) {
                             tname = t.getNameWithScope();
-                            nodesDf.append(i++, Arrays.asList(tname, t.getMetaModel().getTypeName(), ""));
+                            nodes.add(Arrays.asList(tname, t.getMetaModel().getTypeName(), ""));
                         } catch (UnsolvedSymbolException e) {
                             System.out.println(e);
                             tname = t.getNameWithScope();
-                            nodesDf.append(i++, Arrays.asList(tname, t.getMetaModel().getTypeName(), ""));
+                            nodes.add(Arrays.asList(tname, t.getMetaModel().getTypeName(), ""));
                         }
                         System.out.println("\t\t" + tname);
                     }
@@ -97,21 +102,24 @@ public class JReng {
                     for (MethodCallExpr call : calls) {
                         ResolvedMethodDeclaration rm = call.resolve();
                         String rmname = rm.getQualifiedSignature();
-                        nodesDf.append(i++, Arrays.asList(rmname, "M", ""));
+                        nodes.add(Arrays.asList(rmname, "M", ""));
                         System.out.println("\t\t" + rm.getQualifiedSignature());
                     }
                 }
             }
         }
 
-        nodesDf.writeCsv("tmp/nodes.csv");
-        // connectionsDf.writeCsv("tmp/connections.csv");
+        ExcelUtil xls = new ExcelUtil();
+        Workbook wb = new XSSFWorkbook();
+
+        Workbook nodesWb = xls.createSheet(wb, "nodes", nodes, "id", "type");
+        xls.save(nodesWb, "tmp/nodes.xlsx");
+
+        // Workbook connectionsWb = xls.createSheet("nodes", nodes, "id", "type");
+        // xls.save(connectionsWb, "tmp/connections.xlsx");
+
         return true;
     }
 
-    private static void build(MavenProj proj) {
-        System.out.println("Building project " + proj.getPom().getAbsolutePath());
-
-    }
 
 }

@@ -39,5 +39,9 @@ public class DepFinder {
 
     }
 
+    public Set<Dependency> getDeps() {
+        return deps;
+    }
+
 
 }
