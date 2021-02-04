@@ -22,9 +22,11 @@ import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.model.resolution.TypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ClassLoaderTypeSolver;
 
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import co.edu.javeriana.jreng.dep.DepFinder;
 import co.edu.javeriana.jreng.proj.BuildException;
 import co.edu.javeriana.jreng.proj.MavenProj;
 import co.edu.javeriana.jreng.util.ExcelUtil;
@@ -62,64 +64,20 @@ public class JReng {
 
         Collection<File> javas = proj.javas();
 
-        // DataFrame<String> connectionsDf = new DataFrame<>("src", "dst", "type");
-        Set<List<String>> nodes = new HashSet<>();
-        Set<List<String>> connections = new HashSet<>();
+        DepFinder dep = new DepFinder("");
 
-        System.out.println("Extracting static dependencies");
         for (File javaFile : javas) {
-            CompilationUnit cu = StaticJavaParser.parse(javaFile);
-            List<ClassOrInterfaceDeclaration> classes = cu.findAll(ClassOrInterfaceDeclaration.class);
-            for (ClassOrInterfaceDeclaration c : classes) {
-                String cname = c.resolve().getQualifiedName();
-
-                nodes.add(Arrays.asList(cname, c.isInterface() ? "I" : "C", ""));
-                System.out.println(cname);
-                List<MethodDeclaration> methods = c.getMethods();
-                for (MethodDeclaration m : methods) {
-                    String mname = m.resolve().getQualifiedSignature();
-                    nodes.add(Arrays.asList(mname, "M", ""));
-                    System.out.println("\t" + mname);
-                    List<ClassOrInterfaceType> types = m.findAll(ClassOrInterfaceType.class);
-                    for (ClassOrInterfaceType t : types) {
-                        String tname = "";
-                        try {
-                            ResolvedReferenceType rt = t.resolve();
-                            tname = rt.getQualifiedName();
-                            nodes.add(
-                                    Arrays.asList(tname, rt.getTypeDeclaration().get().isInterface() ? "I" : "C", ""));
-                        } catch (UnsupportedOperationException e) {
-                            tname = t.getNameWithScope();
-                            nodes.add(Arrays.asList(tname, t.getMetaModel().getTypeName(), ""));
-                        } catch (UnsolvedSymbolException e) {
-                            System.out.println(e);
-                            tname = t.getNameWithScope();
-                            nodes.add(Arrays.asList(tname, t.getMetaModel().getTypeName(), ""));
-                        }
-                        System.out.println("\t\t" + tname);
-                    }
-                    List<MethodCallExpr> calls = m.findAll(MethodCallExpr.class);
-                    for (MethodCallExpr call : calls) {
-                        ResolvedMethodDeclaration rm = call.resolve();
-                        String rmname = rm.getQualifiedSignature();
-                        nodes.add(Arrays.asList(rmname, "M", ""));
-                        System.out.println("\t\t" + rm.getQualifiedSignature());
-                    }
-                }
-            }
+            dep.visit(javaFile);
         }
+        // System.out.println(dep.getDeps());
 
         ExcelUtil xls = new ExcelUtil();
         Workbook wb = new XSSFWorkbook();
-
-        Workbook nodesWb = xls.createSheet(wb, "nodes", nodes, "id", "type");
-        xls.save(nodesWb, "tmp/nodes.xlsx");
-
-        // Workbook connectionsWb = xls.createSheet("nodes", nodes, "id", "type");
-        // xls.save(connectionsWb, "tmp/connections.xlsx");
+        xls.createSheet(wb, "nodes", dep.getNodes(), "id", "type");
+        xls.createSheet(wb, "conns", dep.getDeps(), "src", "dst", "type");
+        xls.save(wb, "tmp/deps.xlsx");
 
         return true;
     }
-
 
 }

@@ -4,14 +4,29 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import com.github.javaparser.ast.body.ConstructorDeclaration;
+import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.type.ArrayType;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.type.IntersectionType;
+import com.github.javaparser.ast.type.PrimitiveType;
 import com.github.javaparser.ast.type.Type;
+import com.github.javaparser.ast.type.TypeParameter;
+import com.github.javaparser.ast.type.UnionType;
+import com.github.javaparser.ast.type.UnknownType;
+import com.github.javaparser.ast.type.VarType;
+import com.github.javaparser.ast.type.VoidType;
+import com.github.javaparser.ast.type.WildcardType;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
+import com.github.javaparser.resolution.declarations.ResolvedFieldDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 
+
+/**
+ * Gives an id to every element in the AST
+ */
 public class Catalog {
     public String idOf(TypeDeclaration<?> clazz) {
         return clazz.getFullyQualifiedName().orElse(clazz.getNameAsString());
@@ -19,6 +34,11 @@ public class Catalog {
 
     public String idOf(MethodDeclaration method) {
         return method.resolve().getQualifiedSignature();
+    }
+
+    public String idOf(FieldDeclaration field) {
+        ResolvedFieldDeclaration rf = field.resolve();
+        return rf.declaringType().getQualifiedName() + "." + rf.getName();
     }
 
     public String idOf(ConstructorDeclaration constr) {
@@ -36,6 +56,46 @@ public class Catalog {
 
     public String idOf(MethodCallExpr methodCall) {
         return methodCall.resolve().getQualifiedSignature();
+    }
+
+    public String idOf(VoidType vt) {
+        return "void";
+    }
+
+    public String idOf(ArrayType t) {
+        return t.getComponentType().asString() + "[]";
+    }
+
+    public String idOf(IntersectionType t) {
+        return "intersection " + t.getElementType().asString();
+    }
+
+    public String idOf(PrimitiveType t) {
+        return t.asString();
+    }
+
+    // public String idOf(ReferenceType t) {
+    //     return t.toString();
+    // }
+
+    public String idOf(TypeParameter t) {
+        return t.toString();
+    }
+
+    public String idOf(UnionType t) {
+        return t.toString();
+    }
+
+    public String idOf(UnknownType t) {
+        return t.toString();
+    }
+
+    public String idOf(VarType t) {
+        return t.toString();
+    }
+
+    public String idOf(WildcardType t) {
+        return t.toString();
     }
 
     public String idOf(Type type) {

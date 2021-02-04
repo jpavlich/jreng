@@ -3,7 +3,6 @@ package co.edu.javeriana.jreng.util;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -13,7 +12,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 
 public class ExcelUtil {
 
-    public Workbook createSheet(Workbook wb, String sheetName, Collection<List<String>> data, String... columns) { // https://mkyong.com/java/apache-poi-reading-and-writing-excel-file-in-java/
+    public Sheet createSheet(Workbook wb, String sheetName, Iterable<List<String>> data, String... columns) { // https://mkyong.com/java/apache-poi-reading-and-writing-excel-file-in-java/
         
         Sheet sh = wb.createSheet(sheetName);
 
@@ -33,7 +32,7 @@ public class ExcelUtil {
             }
         }
 
-        return wb;
+        return sh;
 
     }
 

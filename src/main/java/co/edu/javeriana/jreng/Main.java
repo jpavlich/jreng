@@ -11,6 +11,6 @@ import co.edu.javeriana.jreng.proj.BuildException;
 public class Main {
 
     public static void main(String[] args) throws IOException, BuildException {
-        new JReng("../spring-petclinic/pom.xml", false).process();
+        new JReng("testProj1/testProj1/pom.xml", false).process();
     }
 }
