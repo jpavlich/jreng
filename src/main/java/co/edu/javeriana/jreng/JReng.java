@@ -14,6 +14,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import co.edu.javeriana.jreng.dep.DepFinder;
+import co.edu.javeriana.jreng.dep.DepGraph;
 import co.edu.javeriana.jreng.proj.BuildException;
 import co.edu.javeriana.jreng.proj.MavenProj;
 import co.edu.javeriana.jreng.util.ExcelUtil;
@@ -51,17 +52,18 @@ public class JReng {
 
         Collection<File> javas = proj.javas();
 
-        DepFinder dep = new DepFinder("");
+        DepGraph depGraph = new DepGraph();
+
+        DepFinder dep = new DepFinder(depGraph, "");
 
         for (File javaFile : javas) {
-            dep.visit(javaFile);
+            dep.visit(javaFile, null);
         }
-        // System.out.println(dep.getDeps());
 
         ExcelUtil xls = new ExcelUtil();
         Workbook wb = new XSSFWorkbook();
-        xls.createSheet(wb, "nodes", dep.getNodes(), "id", "type");
-        xls.createSheet(wb, "conns", dep.getDeps(), "src", "dst", "type");
+        xls.createSheet(wb, "nodes", depGraph.getNodes(), "id", "type");
+        xls.createSheet(wb, "conns", depGraph.getDeps(), "src", "dst", "type");
         xls.save(wb, "tmp/deps.xlsx");
 
         return true;
