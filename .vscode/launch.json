@@ -9,7 +9,8 @@
             "name": "Debug (Launch)-Main<jreng>",
             "request": "launch",
             "mainClass": "co.edu.javeriana.jreng.Main",
-            "projectName": "jreng"
+            "projectName": "jreng",
+            "args": "testProj1/pom.xml tmp/deps.xlsx -c"
         }
     ]
 }

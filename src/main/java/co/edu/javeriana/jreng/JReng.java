@@ -19,25 +19,20 @@ import co.edu.javeriana.jreng.proj.BuildException;
 import co.edu.javeriana.jreng.proj.MavenProj;
 import co.edu.javeriana.jreng.util.ExcelUtil;
 
-/**
- * Some code that uses JavaSymbolSolver.
- */
 public class JReng {
 
     private String pomPath;
-    private boolean cleanInstall;
 
-    public JReng(String pomPath, boolean cleanInstall) {
+    public JReng(String pomPath) {
         this.pomPath = pomPath;
-        this.cleanInstall = cleanInstall;
     }
 
-    private MavenProj setup() throws BuildException {
+    private MavenProj setup(boolean cleanInstall) throws BuildException {
         MavenProj proj = new MavenProj(new File(pomPath));
         if (cleanInstall) {
+            System.out.println("Clean install project " + pomPath);
             proj.cleanInstall();
         }
-        System.out.println("Finding jars");
         URLClassLoader cl = proj.getClassLoader();
         TypeSolver typeSolver = new ClassLoaderTypeSolver(cl);
         System.out.println("Found: " + (cl.getURLs().length - 2) + " jars");
@@ -47,8 +42,8 @@ public class JReng {
         return proj;
     }
 
-    public boolean process() throws IOException, BuildException {
-        MavenProj proj = setup();
+    public boolean process(String outFile, boolean cleanInstall) throws IOException, BuildException {
+        MavenProj proj = setup(cleanInstall);
 
         Collection<File> javas = proj.javas();
 
@@ -64,8 +59,8 @@ public class JReng {
         Workbook wb = new XSSFWorkbook();
         xls.createSheet(wb, "nodes", depGraph.getNodes(), "id", "type");
         xls.createSheet(wb, "conns", depGraph.getDeps(), "src", "dst", "type");
-        xls.save(wb, "tmp/deps.xlsx");
-
+        xls.save(wb, outFile);
+        System.out.println("Saved results to " + outFile);
         return true;
     }
 

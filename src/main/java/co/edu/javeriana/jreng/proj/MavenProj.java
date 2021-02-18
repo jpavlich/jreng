@@ -82,8 +82,8 @@ public class MavenProj extends MavenDep {
             }
 
             URLClassLoader cl = new URLClassLoader(urls.toArray(new URL[0]));
-            System.out.println(cl.getURLs()[0]);
-            System.out.println(cl.getURLs()[1]);
+            // System.out.println(cl.getURLs()[0]);
+            // System.out.println(cl.getURLs()[1]);
             return cl;
         } catch (MalformedURLException e) {
             e.printStackTrace();

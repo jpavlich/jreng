@@ -16,7 +16,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
-    <main.class>co.edu.javeriana.jreng.JReng</main.class>
+    <main.class>co.edu.javeriana.jreng.Main</main.class>
+    <poi.version>4.1.0</poi.version>
   </properties>
 
   <dependencies>
@@ -66,12 +67,12 @@
     <dependency>
       <groupId>org.apache.poi</groupId>
       <artifactId>poi</artifactId>
-      <version>3.17</version>
+      <version>${poi.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.poi</groupId>
       <artifactId>poi-ooxml</artifactId>
-      <version>3.17</version>
+      <version>${poi.version}</version>
     </dependency>
 
   </dependencies>
