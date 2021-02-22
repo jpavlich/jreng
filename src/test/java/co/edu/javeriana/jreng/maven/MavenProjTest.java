@@ -7,8 +7,8 @@ import java.io.File;
 import org.junit.Before;
 import org.junit.Test;
 
-import co.edu.javeriana.jreng.proj.MavenDep;
 import co.edu.javeriana.jreng.proj.MavenProj;
+import co.edu.javeriana.jreng.proj.Project;
 
 public class MavenProjTest {
 
@@ -47,7 +47,7 @@ public class MavenProjTest {
 
     @Test
     public void resolveJavaxCache() {
-        MavenDep dep = new MavenDep("javax.cache", "cache-api", "1.1.1", "compile");
+        Project dep = new MavenProj("javax.cache", "cache-api", "1.1.1", "compile");
         for (File jar : dep.getJars()) {
             System.out.println(jar);
             assertTrue(jar.exists());
