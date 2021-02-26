@@ -10,7 +10,8 @@
             "request": "launch",
             "mainClass": "co.edu.javeriana.jreng.Main",
             "projectName": "jreng",
-            "args": "testProj1/pom.xml tmp/deps.xlsx -c"
+            "cwd": "${workspaceFolder}",
+            "args": "../sagan/sagan-site/build.gradle tmp/sagan.xlsx"
         }
     ]
 }

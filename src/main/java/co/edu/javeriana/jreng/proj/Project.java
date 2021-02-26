@@ -19,72 +19,9 @@ import co.edu.javeriana.jreng.util.Command.Result;
 /**
  * ProjectDependency
  */
-public interface Project {
+public interface Project<D extends ProjDep> {
 
     static String SOURCE_FOLDER = "/src";
-
-    default String getMeta(File projFile, String attribute) {
-        return Command.run(String.format(getMetaCommand(), attribute), projFile.getParentFile()).getOutput().get(0);
-    }
-
-    default Collection<File> javas() {
-        return FileUtils.listFiles(getSourceFolder(), new String[] { "java" }, true);
-    }
-
-    default Collection<File> getJars() {
-        return FileUtils.listFiles(getDepFolder(), new String[] { "jar" }, true);
-    }
-
-    default List<File> depJars(String... scopes) {
-        Set<String> scopeSet = new HashSet<>();
-        scopeSet.addAll(Arrays.asList(scopes));
-
-        List<File> jars = new ArrayList<>();
-        // jars.addAll(getJars());
-        for (Project dep : deps()) {
-            if (scopeSet.isEmpty() || scopeSet.contains(dep.getScope())) {
-                jars.addAll(dep.getJars());
-            }
-        }
-        return jars;
-    }
-
-    String getScope();
-
-    default URLClassLoader getClassLoader() {
-        try {
-            // https://stackoverflow.com/a/6219855
-
-            List<URL> urls = new ArrayList<>();
-            urls.add(new File(getProjFile().getParentFile(), "target/classes/").toURI().toURL());
-            urls.add(new File(getProjFile().getParentFile(), "target/test-classes/").toURI().toURL());
-            for (File jarFile : depJars()) {
-                urls.add(jarFile.toURI().toURL());
-            }
-
-            URLClassLoader cl = new URLClassLoader(urls.toArray(new URL[0]));
-            // System.out.println(cl.getURLs()[0]);
-            // System.out.println(cl.getURLs()[1]);
-            return cl;
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-            return null;
-        }
-
-    }
-
-    default List<Project> deps() {
-        List<Project> deps = new ArrayList<>();
-        Result result = Command.run(String.format(getDepsCommand(), getProjFile().getAbsolutePath()),
-                getProjFile().getParentFile());
-        for (String line : result.getOutput().subList(2, result.getOutput().size())) {
-            Project dep = parse(line);
-            if (dep!=null) {
-                deps.add(dep);
-            }
-        }
-        return deps;
-    }
 
     default void cleanInstall() throws BuildException {
         Result result = Command.run(getCleanInstallCommand(), getProjFile().getParentFile());
@@ -97,18 +34,72 @@ public interface Project {
         return new File(getProjFile().getAbsoluteFile().getParent() + SOURCE_FOLDER);
     }
 
+    // default String getMeta(File projFile, String attribute) {
+    //     return Command.run(String.format(getMetaCommand(), attribute), projFile.getParentFile()).getOutput().get(0);
+    // }
+
+    default Collection<File> javas() {
+        return FileUtils.listFiles(getSourceFolder(), new String[] { "java" }, true);
+    }
+
+    default URLClassLoader getClassLoader() {
+        try {
+            // https://stackoverflow.com/a/6219855
+
+            List<URL> urls = new ArrayList<>();
+            urls.add(new File(getProjFile().getParentFile(), "target/classes/").toURI().toURL());
+            urls.add(new File(getProjFile().getParentFile(), "target/test-classes/").toURI().toURL());
+            for (File jarFile : depJars()) {
+                urls.add(jarFile.toURI().toURL());
+            }
+            URLClassLoader cl = new URLClassLoader(urls.toArray(new URL[0]));
+            return cl;
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+    }
+
+    private List<File> depJars(String... scopes) {
+        Set<String> scopeSet = new HashSet<>();
+        scopeSet.addAll(Arrays.asList(scopes));
+
+        List<File> jars = new ArrayList<>();
+        // jars.addAll(getJars());
+        for (ProjDep dep : deps()) {
+            if (scopeSet.isEmpty() || scopeSet.contains(dep.getScope())) {
+                jars.addAll(dep.getJars());
+            }
+        }
+        return jars;
+    }
+
+    private List<D> deps() {
+        List<D> deps = new ArrayList<>();
+        Result result = Command.run(String.format(getDepsCommand(), getProjFile().getAbsolutePath()),
+                getProjFile().getParentFile().getAbsoluteFile());
+        for (String line : result.getOutput().subList(2, result.getOutput().size())) {
+            D dep = parse(line);
+            if (dep != null) {
+                deps.add(dep);
+            }
+        }
+        return deps;
+    }
+
     // void init(File projFile);
 
     String getCleanInstallCommand();
 
-    String getMetaCommand();
+    // String getMetaCommand();
 
     String getDepsCommand();
 
     File getProjFile();
 
-    File getDepFolder();
+    D parse(String line);
 
-    Project parse(String line);
+    // String getScope();
 
 }

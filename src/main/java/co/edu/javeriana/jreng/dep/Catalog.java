@@ -2,6 +2,10 @@ package co.edu.javeriana.jreng.dep;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
@@ -23,11 +27,12 @@ import com.github.javaparser.resolution.UnsolvedSymbolException;
 import com.github.javaparser.resolution.declarations.ResolvedFieldDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 
-
 /**
  * Gives an id to every element in the AST
  */
 public class Catalog {
+    Pattern idPat = Pattern.compile(".*\\.([\\w\\[\\]]+(\\(.*\\))?)");
+
     public String idOf(TypeDeclaration<?> clazz) {
         return clazz.getFullyQualifiedName().orElse(clazz.getNameAsString());
     }
@@ -75,7 +80,7 @@ public class Catalog {
     }
 
     // public String idOf(ReferenceType t) {
-    //     return t.toString();
+    // return t.toString();
     // }
 
     public String idOf(TypeParameter t) {
@@ -108,6 +113,26 @@ public class Catalog {
             e.printStackTrace();
             System.exit(1);
             return null;
+        }
+    }
+
+    public String shortName(String id) {
+        // System.out.println(id);
+        Matcher m = idPat.matcher(id);
+        if (m.matches()) {
+            String name = m.group(1);
+            if (m.group(2) != null) {
+                name = name.substring(0, m.group(1).indexOf("("));
+                String[] args = m.group(2).substring(1, m.group(2).length() - 1).split(",");
+                List<String> shortArgs = new ArrayList<String>();
+                for (String arg : args) {
+                    shortArgs.add(shortName(arg));
+                }
+                name += "(" + String.join(",", shortArgs) + ")";
+            }
+            return name;
+        } else {
+            return id;
         }
     }
 

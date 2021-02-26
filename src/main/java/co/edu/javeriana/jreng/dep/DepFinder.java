@@ -122,13 +122,13 @@ public class DepFinder implements GenericVisitor<String, Object> {
 
     protected void addNode(String id, NodeType t) {
         if (!id.matches(excludedNodes)) {
-            depGraph.addNode(id, t);
+            depGraph.addNode(id, cat.shortName(id), t);
         }
     }
 
     protected void addDep(String src, String dst, DepType t) {
         if (!src.matches(excludedNodes) && !dst.matches(excludedNodes)) {
-            depGraph.addDep(src, dst, t);
+            depGraph.addDep(src, dst, t.getType(), t);
         }
     }
 

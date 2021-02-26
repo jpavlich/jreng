@@ -14,12 +14,12 @@ public class DepGraph {
     public DepGraph() {
     }
 
-    public void addNode(String id, NodeType t) {
-        nodes.put(id, new Node(id, t.getType()));
+    public void addNode(String id, String label, NodeType t) {
+        nodes.put(id, new Node(id, label, t.getType()));
     }
 
-    public void addDep(String src, String dst, DepType t) {
-        deps.add(new Dependency(src, dst, t.getType()));
+    public void addDep(String src, String dst, String label, DepType t) {
+        deps.add(new Dependency(src, dst, label,  t.getType()));
     }
 
     public boolean hasNode(String id) {

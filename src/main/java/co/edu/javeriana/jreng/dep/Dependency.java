@@ -5,9 +5,10 @@ import java.util.ArrayList;
 public class Dependency extends ArrayList<String> {
     private static final long serialVersionUID = 1368163387024523895L;
 
-    public Dependency(String src, String dst, String type) {
+    public Dependency(String src, String dst, String label, String type) {
         add(src);
         add(dst);
+        add(label);
         add(type);
     }
 
@@ -19,8 +20,12 @@ public class Dependency extends ArrayList<String> {
         return get(1);
     }
 
-    public String getType() {
+    public String getLabel() {
         return get(2);
+    }
+
+    public String getType() {
+        return get(3);
     }
 
 }
