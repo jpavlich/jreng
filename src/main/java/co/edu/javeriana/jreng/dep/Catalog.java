@@ -104,7 +104,7 @@ public class Catalog {
             return methodCall.resolve().getQualifiedSignature();
         } catch (Throwable e) {
             System.err.println(e);
-            return methodCall.getNameAsString();
+            return e.getMessage();
         }
     }
 
