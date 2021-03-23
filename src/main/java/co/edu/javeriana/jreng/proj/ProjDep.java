@@ -45,6 +45,7 @@ public abstract class ProjDep {
 
     
     public Collection<File> getJars() {
+        System.out.println(getDepFolder());
         return FileUtils.listFiles(getDepFolder(), new String[] { "jar" }, true);
     }
 

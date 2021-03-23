@@ -12,6 +12,7 @@
             "projectName": "jreng",
             "cwd": "${workspaceFolder}",
             "args": "../sagan/sagan-site/build.gradle tmp/sagan.xlsx"
+            // "args": "./testProj1/pom.xml tmp/testProj1.xlsx"
         }
     ]
 }

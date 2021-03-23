@@ -35,20 +35,25 @@ public interface Project<D extends ProjDep> {
     }
 
     // default String getMeta(File projFile, String attribute) {
-    //     return Command.run(String.format(getMetaCommand(), attribute), projFile.getParentFile()).getOutput().get(0);
+    // return Command.run(String.format(getMetaCommand(), attribute),
+    // projFile.getParentFile()).getOutput().get(0);
     // }
 
     default Collection<File> javas() {
         return FileUtils.listFiles(getSourceFolder(), new String[] { "java" }, true);
     }
 
+    List<URL> getBuildFolderURLs();
+
     default URLClassLoader getClassLoader() {
         try {
             // https://stackoverflow.com/a/6219855
 
-            List<URL> urls = new ArrayList<>();
-            urls.add(new File(getProjFile().getParentFile(), "target/classes/").toURI().toURL());
-            urls.add(new File(getProjFile().getParentFile(), "target/test-classes/").toURI().toURL());
+            // List<URL> urls = new ArrayList<>();
+            // // TODO Overwrite for Gradle
+            // urls.add(new File(getProjFile().getParentFile(), "target/classes/").toURI().toURL());
+            // urls.add(new File(getProjFile().getParentFile(), "target/test-classes/").toURI().toURL());
+            List<URL> urls = getBuildFolderURLs();
             for (File jarFile : depJars()) {
                 urls.add(jarFile.toURI().toURL());
             }
@@ -77,8 +82,9 @@ public interface Project<D extends ProjDep> {
 
     private List<D> deps() {
         List<D> deps = new ArrayList<>();
-        Result result = Command.run(String.format(getDepsCommand(), getProjFile().getAbsolutePath()),
-                getProjFile().getParentFile().getAbsoluteFile());
+        String cmd = String.format(getDepsCommand(), getProjFile().getAbsolutePath());
+        System.out.println(cmd);
+        Result result = Command.run(cmd, getProjFile().getParentFile().getAbsoluteFile());
         for (String line : result.getOutput().subList(2, result.getOutput().size())) {
             D dep = parse(line);
             if (dep != null) {

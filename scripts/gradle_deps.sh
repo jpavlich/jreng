@@ -1,2 +1,3 @@
 #!/bin/bash
-gradle -q dependencies --build-file=$1 --configuration compileClasspath | grep "\-\-\- " | sed 's/^.*\-\-\- //' | sed 's/:[^:]+ -> /:/'| sed 's/ -> /:/'| sed 's/[(][*][)]//' | sed 's/ *$//'| grep -v "project " |sed '/^\n$/d' | sort | uniq 
+gradle -q dependencies --build-file=$1  | grep "\-\-\- " | sed 's/^.*\-\-\- //' | sed 's/:[^:]+ -> /:/'| sed 's/ -> /:/'| sed 's/[(][*][)]//' | sed 's/ *$//'| grep -v "project " |sed '/^\n$/d' | sort | uniq 
+# gradle -q dependencies --build-file=$1 --configuration compileClasspath | grep "\-\-\- " | sed 's/^.*\-\-\- //' | sed 's/:[^:]+ -> /:/'| sed 's/ -> /:/'| sed 's/[(][*][)]//' | sed 's/ *$//'| grep -v "project " |sed '/^\n$/d' | sort | uniq 

@@ -2,6 +2,7 @@ package co.edu.javeriana.jreng;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Collection;
 
@@ -10,7 +11,6 @@ import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.model.resolution.TypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ClassLoaderTypeSolver;
 
-import org.apache.maven.model.Profile;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -51,9 +51,12 @@ public class JReng {
         URLClassLoader cl = proj.getClassLoader();
         TypeSolver typeSolver = new ClassLoaderTypeSolver(cl);
         System.out.println("Found: " + (cl.getURLs().length - 2) + " jars");
-
+        for (URL url : cl.getURLs()) {
+            System.out.println(url);
+        }
         JavaSymbolSolver symbolSolver = new JavaSymbolSolver(typeSolver);
         StaticJavaParser.getConfiguration().setSymbolResolver(symbolSolver);
+        
         return proj;
     }
 
@@ -69,6 +72,7 @@ public class JReng {
         for (File javaFile : javas) {
             dep.visit(javaFile, null);
         }
+        
 
         ExcelUtil xls = new ExcelUtil();
         Workbook wb = new XSSFWorkbook();

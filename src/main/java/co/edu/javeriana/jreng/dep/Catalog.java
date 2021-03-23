@@ -11,6 +11,7 @@ import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
+import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.type.ArrayType;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -114,6 +115,10 @@ public class Catalog {
             System.exit(1);
             return null;
         }
+    }
+
+    public String idOf(AnnotationExpr a) {
+        return a.resolve().getQualifiedName();
     }
 
     public String shortName(String id) {

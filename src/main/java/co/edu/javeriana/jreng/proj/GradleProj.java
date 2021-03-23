@@ -1,6 +1,15 @@
 package co.edu.javeriana.jreng.proj;
 
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+
+import org.apache.commons.io.FileUtils;
 
 public class GradleProj implements Project<GradleDep> {
 
@@ -12,7 +21,7 @@ public class GradleProj implements Project<GradleDep> {
 
     @Override
     public String getCleanInstallCommand() {
-        return "gradle clean build -x test";
+        return "gradle clean build -Dorg.gradle.java.home=/usr/lib/jvm/java-8-openjdk -x test";
     }
 
     @Override
@@ -27,11 +36,27 @@ public class GradleProj implements Project<GradleDep> {
 
     @Override
     public GradleDep parse(String line) {
-        if (line.strip().isEmpty()) {
+        line = line.strip();
+        if (line.isEmpty() || line.endsWith("(n)")) {
             return null;
         }
-        System.out.println(line);
-        String[] dep = line.strip().split(":");
-        return new GradleDep(dep[0], dep[1], dep[2], "compile");
+        if (line.endsWith("(c)")) {
+            line = line.substring(0, line.length() - 3).strip();
+        }
+        String[] dep = line.split(":");
+        int last = dep.length - 1;
+        return new GradleDep(dep[0], dep[1], dep[last], "compile");
+    }
+
+    @Override
+    public List<URL> getBuildFolderURLs() {
+        List<URL> urls = new ArrayList<>();
+        try {
+            urls.add(new File(getProjFile().getParentFile(), "build/classes/java/main/").toURI().toURL());
+            urls.add(new File(getProjFile().getParentFile(), "build/classes/java/test/").toURI().toURL());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+        return urls;
     }
 }

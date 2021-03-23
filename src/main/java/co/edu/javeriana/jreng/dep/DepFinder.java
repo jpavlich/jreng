@@ -26,6 +26,7 @@ import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.comments.BlockComment;
 import com.github.javaparser.ast.comments.JavadocComment;
 import com.github.javaparser.ast.comments.LineComment;
+import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.ArrayAccessExpr;
 import com.github.javaparser.ast.expr.ArrayCreationExpr;
 import com.github.javaparser.ast.expr.ArrayInitializerExpr;
@@ -52,6 +53,7 @@ import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.NullLiteralExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.github.javaparser.ast.expr.PatternExpr;
 import com.github.javaparser.ast.expr.SimpleName;
 import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
 import com.github.javaparser.ast.expr.StringLiteralExpr;
@@ -149,20 +151,27 @@ public class DepFinder implements GenericVisitor<String, Object> {
         String id = cat.idOf(decl);
         if (!depGraph.hasNode(id)) {
             addNode(id, decl.isInterface() ? NodeType.INTERFACE : NodeType.CLASS);
-            decl.findAll(MethodDeclaration.class).forEach(m -> addDep(id, visit(m, arg), DepType.HAS));
-            decl.findAll(FieldDeclaration.class).forEach(f -> addDep(id, visit(f, arg), DepType.HAS));
+            decl.getMethods().forEach(m -> addDep(id, visit(m, arg), DepType.HAS_METHOD));
+            decl.getFields().forEach(f -> addDep(id, visit(f, arg), DepType.HAS_METHOD));
+            decl.getAnnotations() .forEach(a -> addDep(id, visit(a, arg), DepType.HAS_ANNOTATION));
         }
         return id;
+    }
+
+    private String visit(AnnotationExpr a, Object arg) {
+        String aid = cat.idOf(a);
+        addNode(aid, NodeType.ANNOTATION);
+        return aid;
     }
 
     @Override
     public String visit(MethodDeclaration method, Object arg) {
         String mid = cat.idOf(method);
-
+        if (mid == null) return null;
         addNode(mid, NodeType.METHOD);
 
         addDep(mid, visit(method.getType(), arg), DepType.RETURN_TYPE);
-        method.getParameters().forEach(p -> addDep(mid, visit(p.getType(), arg), DepType.HAS));
+        method.getParameters().forEach(p -> addDep(mid, visit(p.getType(), arg), DepType.HAS_PARAM));
         return mid;
     }
 
@@ -185,7 +194,7 @@ public class DepFinder implements GenericVisitor<String, Object> {
     public String visit(ConstructorDeclaration constr, Object arg) {
         String mid = cat.idOf(constr);
         addNode(mid, NodeType.CONSTRUCTOR);
-        constr.getParameters().forEach(p -> addDep(mid, visit(p.getType(), arg), DepType.HAS));
+        constr.getParameters().forEach(p -> addDep(mid, visit(p.getType(), arg), DepType.HAS_PARAM));
         return mid;
     }
 
@@ -746,6 +755,12 @@ public class DepFinder implements GenericVisitor<String, Object> {
 
     @Override
     public String visit(TextBlockLiteralExpr n, Object arg) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String visit(PatternExpr n, Object arg) {
         // TODO Auto-generated method stub
         return null;
     }

@@ -1,7 +1,8 @@
 package co.edu.javeriana.jreng.dep;
 
 public enum DepType {
-    RETURN_TYPE("Return Type"), CALLS("Calls"), HAS("Has"), USES("Uses")
+    RETURN_TYPE("Return Type"), CALLS("Calls"), USES("Uses"), HAS_FIELD("Has Field"), HAS_METHOD("Has Method"),
+    HAS_PARAM("Has Parameter"), HAS_ANNOTATION("Has Annotation")
 
     ;
 
