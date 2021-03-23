@@ -76,7 +76,7 @@ public class JReng {
 
         ExcelUtil xls = new ExcelUtil();
         Workbook wb = new XSSFWorkbook();
-        xls.createSheet(wb, "nodes", depGraph.getNodes(), "id", "label", "type");
+        xls.createSheet(wb, "nodes", depGraph.getNodes(), "id", "label", "type", "subtype");
         xls.createSheet(wb, "conns", depGraph.getDeps(), "source", "target", "label", "type");
         xls.save(wb, outFile);
         System.out.println("Saved results to " + outFile);

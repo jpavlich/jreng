@@ -6,10 +6,11 @@ public class Node extends ArrayList<String> {
 
     private static final long serialVersionUID = -2874826030332811949L;
 
-    public Node(String id, String label, String type) {
+    public Node(String id, String label, String type, String subtype) {
         add(id);
         add(label);
         add(type);
+        add(subtype);
     }
 
     public String getId() {
@@ -22,5 +23,9 @@ public class Node extends ArrayList<String> {
 
     public String getType() {
         return get(2);
+    }
+
+    public String getSubtype() {
+        return get(3);
     }
 }

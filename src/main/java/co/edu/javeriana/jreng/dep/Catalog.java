@@ -10,8 +10,10 @@ import java.util.regex.Pattern;
 import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.type.ArrayType;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -26,13 +28,49 @@ import com.github.javaparser.ast.type.VoidType;
 import com.github.javaparser.ast.type.WildcardType;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
 import com.github.javaparser.resolution.declarations.ResolvedFieldDeclaration;
+import com.github.javaparser.resolution.types.ResolvedPrimitiveType;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
+import com.github.javaparser.resolution.types.ResolvedType;
+import com.github.javaparser.symbolsolver.model.typesystem.ReferenceTypeImpl;
 
 /**
  * Gives an id to every element in the AST
  */
 public class Catalog {
     Pattern idPat = Pattern.compile(".*\\.([\\w\\[\\]]+(\\(.*\\))?)");
+
+    public String shortName(String id) {
+        // System.out.println(id);
+        Matcher m = idPat.matcher(id);
+        if (m.matches()) {
+            String name = m.group(1);
+            if (m.group(2) != null) {
+                name = name.substring(0, m.group(1).indexOf("("));
+                String[] args = m.group(2).substring(1, m.group(2).length() - 1).split(",");
+                List<String> shortArgs = new ArrayList<String>();
+                for (String arg : args) {
+                    shortArgs.add(shortName(arg));
+                }
+                name += "(" + String.join(",", shortArgs) + ")";
+            }
+            return name;
+        } else {
+            return id;
+        }
+    }
+
+    private String dispatch(Object obj) {
+        Method m;
+        try {
+            m = this.getClass().getMethod("idOf", obj.getClass());
+            return (String) m.invoke(this, obj);
+        } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
+                | InvocationTargetException e) {
+            e.printStackTrace();
+            System.exit(1);
+            return null;
+        }
+    }
 
     public String idOf(TypeDeclaration<?> clazz) {
         return clazz.getFullyQualifiedName().orElse(clazz.getNameAsString());
@@ -61,7 +99,13 @@ public class Catalog {
     }
 
     public String idOf(MethodCallExpr methodCall) {
-        return methodCall.resolve().getQualifiedSignature();
+        try {
+            // FIXME This throws exceptions too often
+            return methodCall.resolve().getQualifiedSignature();
+        } catch (Throwable e) {
+            System.err.println(e);
+            return methodCall.getNameAsString();
+        }
     }
 
     public String idOf(VoidType vt) {
@@ -80,9 +124,10 @@ public class Catalog {
         return t.asString();
     }
 
-    // public String idOf(ReferenceType t) {
-    // return t.toString();
-    // }
+    public String idOf(ReferenceTypeImpl t) {
+        // return t.getQualifiedName();
+        return t.getId();
+    }
 
     public String idOf(TypeParameter t) {
         return t.toString();
@@ -105,40 +150,32 @@ public class Catalog {
     }
 
     public String idOf(Type type) {
-        Method m;
-        try {
-            m = this.getClass().getMethod("idOf", type.getClass());
-            return (String) m.invoke(this, type);
-        } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
-                | InvocationTargetException e) {
-            e.printStackTrace();
-            System.exit(1);
-            return null;
-        }
+        return dispatch(type);
+    }
+
+    public String idOf(ResolvedPrimitiveType type) {
+        return type.name();
     }
 
     public String idOf(AnnotationExpr a) {
         return a.resolve().getQualifiedName();
     }
 
-    public String shortName(String id) {
-        // System.out.println(id);
-        Matcher m = idPat.matcher(id);
-        if (m.matches()) {
-            String name = m.group(1);
-            if (m.group(2) != null) {
-                name = name.substring(0, m.group(1).indexOf("("));
-                String[] args = m.group(2).substring(1, m.group(2).length() - 1).split(",");
-                List<String> shortArgs = new ArrayList<String>();
-                for (String arg : args) {
-                    shortArgs.add(shortName(arg));
-                }
-                name += "(" + String.join(",", shortArgs) + ")";
-            }
-            return name;
-        } else {
-            return id;
+    public String idOf(Parameter param) {
+        return idOf(param.getType()) + "." + param.getNameAsString();
+    }
+
+    public String idOf(FieldAccessExpr fa) {
+        try {
+
+            return idOf(fa.resolve().getType()) + "." + fa.getNameAsString();
+        } catch (Throwable e) {
+            System.err.println(e);
+            return fa.getNameAsString();
         }
     }
 
+    private String idOf(ResolvedType type) {
+        return dispatch(type);
+    }
 }

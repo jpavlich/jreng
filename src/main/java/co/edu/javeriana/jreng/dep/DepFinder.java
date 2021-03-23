@@ -1,7 +1,10 @@
 package co.edu.javeriana.jreng.dep;
 
+import static java.util.Map.entry;
+
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.Map;
 import java.util.Optional;
 
 import com.github.javaparser.StaticJavaParser;
@@ -108,6 +111,7 @@ import com.github.javaparser.ast.visitor.GenericVisitor;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
+import com.github.javaparser.resolution.declarations.ResolvedValueDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 
 public class DepFinder implements GenericVisitor<String, Object> {
@@ -116,15 +120,19 @@ public class DepFinder implements GenericVisitor<String, Object> {
     private DepGraph depGraph;
     private String excludedNodes;
 
+    private Map<String, NodeSubtype> annotationSubtypes = Map.ofEntries(entry("Repository", NodeSubtype.REPOSITORY),
+            entry("Controller", NodeSubtype.CONTROLLER), entry("RestController", NodeSubtype.REST_CONTROLLER),
+            entry("Entity", NodeSubtype.ENTITY), entry("Service", NodeSubtype.SERVICE));
+
     public DepFinder(DepGraph depGraph, String excludedNodes) {
         this.depGraph = depGraph;
         this.excludedNodes = excludedNodes;
 
     }
 
-    protected void addNode(String id, NodeType t) {
+    protected void addNode(String id, NodeType t, NodeSubtype st) {
         if (!id.matches(excludedNodes)) {
-            depGraph.addNode(id, cat.shortName(id), t);
+            depGraph.addNode(id, cat.shortName(id), t, st);
         }
     }
 
@@ -150,28 +158,45 @@ public class DepFinder implements GenericVisitor<String, Object> {
     public String visit(ClassOrInterfaceDeclaration decl, Object arg) {
         String id = cat.idOf(decl);
         if (!depGraph.hasNode(id)) {
-            addNode(id, decl.isInterface() ? NodeType.INTERFACE : NodeType.CLASS);
+            addNode(id, decl.isInterface() ? NodeType.INTERFACE : NodeType.CLASS, findSubtype(decl));
             decl.getMethods().forEach(m -> addDep(id, visit(m, arg), DepType.HAS_METHOD));
             decl.getFields().forEach(f -> addDep(id, visit(f, arg), DepType.HAS_METHOD));
-            decl.getAnnotations() .forEach(a -> addDep(id, visit(a, arg), DepType.HAS_ANNOTATION));
+            decl.getAnnotations().forEach(a -> addDep(id, visit(a, arg), DepType.HAS_ANNOTATION));
         }
         return id;
     }
 
+    private NodeSubtype findSubtype(ClassOrInterfaceDeclaration decl) {
+        for (java.util.Map.Entry<String, NodeSubtype> entry : annotationSubtypes.entrySet()) {
+            if (decl.getAnnotationByName(entry.getKey()).isPresent()) {
+                return entry.getValue();
+            }
+        }
+        return NodeSubtype.NONE;
+    }
+
     private String visit(AnnotationExpr a, Object arg) {
         String aid = cat.idOf(a);
-        addNode(aid, NodeType.ANNOTATION);
+        addNode(aid, NodeType.ANNOTATION, NodeSubtype.NONE);
         return aid;
     }
 
     @Override
     public String visit(MethodDeclaration method, Object arg) {
         String mid = cat.idOf(method);
-        if (mid == null) return null;
-        addNode(mid, NodeType.METHOD);
+        if (mid == null)
+            return null;
+        addNode(mid, NodeType.METHOD, NodeSubtype.NONE);
 
         addDep(mid, visit(method.getType(), arg), DepType.RETURN_TYPE);
         method.getParameters().forEach(p -> addDep(mid, visit(p.getType(), arg), DepType.HAS_PARAM));
+        method.getAnnotations().forEach(a -> addDep(mid, visit(a, arg), DepType.HAS_ANNOTATION));
+        method.getBody().ifPresent((b) -> {
+            b.findAll(ClassOrInterfaceType.class).forEach(c -> addDep(mid, visit(c, arg), DepType.USES_CLASS));
+            b.findAll(MethodCallExpr.class).forEach(c -> addDep(mid, visit(c, arg), DepType.CALLS));
+            b.findAll(FieldAccessExpr.class).forEach(f -> addDep(mid, visit(f, arg), DepType.USES_FIELD));
+
+        });
         return mid;
     }
 
@@ -186,14 +211,15 @@ public class DepFinder implements GenericVisitor<String, Object> {
     @Override
     public String visit(FieldDeclaration field, Object arg) {
         String mid = cat.idOf(field);
-        addNode(mid, NodeType.FIELD);
+        addNode(mid, NodeType.FIELD, NodeSubtype.NONE);
+        field.getAnnotations().forEach(a -> addDep(mid, visit(a, arg), DepType.HAS_ANNOTATION));
         return mid;
     }
 
     @Override
     public String visit(ConstructorDeclaration constr, Object arg) {
         String mid = cat.idOf(constr);
-        addNode(mid, NodeType.CONSTRUCTOR);
+        addNode(mid, NodeType.CONSTRUCTOR, NodeSubtype.NONE);
         constr.getParameters().forEach(p -> addDep(mid, visit(p.getType(), arg), DepType.HAS_PARAM));
         return mid;
     }
@@ -206,7 +232,7 @@ public class DepFinder implements GenericVisitor<String, Object> {
             tid = rt.getQualifiedName();
             Optional<ResolvedReferenceTypeDeclaration> c = rt.getTypeDeclaration();
             if (c.isPresent()) {
-                addNode(tid, c.get().isInterface() ? NodeType.INTERFACE : NodeType.CLASS);
+                addNode(tid, c.get().isInterface() ? NodeType.INTERFACE : NodeType.CLASS, NodeSubtype.NONE);
             }
         } catch (UnsupportedOperationException e) {
             tid = t.getNameWithScope();
@@ -218,11 +244,25 @@ public class DepFinder implements GenericVisitor<String, Object> {
     }
 
     @Override
+    public String visit(Parameter param, Object arg) {
+        String pid = cat.idOf(param);
+        addNode(pid, NodeType.PARAM, NodeSubtype.NONE);
+        param.getAnnotations().forEach(a -> addDep(pid, visit(a, arg), DepType.HAS_ANNOTATION));
+        return pid;
+    }
+
+    @Override
     public String visit(MethodCallExpr call, Object arg) {
-        ResolvedMethodDeclaration rmd = call.resolve();
-        String rmname = rmd.getQualifiedSignature();
-        addNode(rmname, NodeType.METHOD);
-        return cat.idOf(call);
+        String mcid = cat.idOf(call);
+        addNode(mcid, NodeType.METHOD, NodeSubtype.NONE);
+        return mcid;
+    }
+
+    @Override
+    public String visit(FieldAccessExpr fieldAccess, Object arg) {
+        String faid = cat.idOf(fieldAccess);
+        addNode(faid, NodeType.FIELD, NodeSubtype.NONE);
+        return faid;
     }
 
     @Override
@@ -275,12 +315,6 @@ public class DepFinder implements GenericVisitor<String, Object> {
 
     @Override
     public String visit(VariableDeclarator n, Object arg) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public String visit(Parameter n, Object arg) {
         // TODO Auto-generated method stub
         return null;
     }
@@ -395,12 +429,6 @@ public class DepFinder implements GenericVisitor<String, Object> {
 
     @Override
     public String visit(EnclosedExpr n, Object arg) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public String visit(FieldAccessExpr n, Object arg) {
         // TODO Auto-generated method stub
         return null;
     }
