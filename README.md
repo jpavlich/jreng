@@ -4,6 +4,7 @@ Reverse engineering tool for Java
 Jreng uses the javaparser library to extract classes, methods, annotations, and their dependencies into a spreadsheet
 
 # Installation 
+* This only works on Linux
 * Install JDK 8+ and Maven
 * Run `./compile.sh`
 
