@@ -5,7 +5,7 @@ Jreng uses the javaparser library to extract classes, methods, annotations, and 
 
 # Installation 
 * This only works on Linux
-* Install JDK 8+ and Maven
+* Install JDK 11+ and Maven
 * Run `./compile.sh`
 
 # Usage
