@@ -11,8 +11,9 @@
             "mainClass": "co.edu.javeriana.jreng.Main",
             "projectName": "jreng",
             "cwd": "${workspaceFolder}",
-            "args": "../sagan/sagan-site/build.gradle tmp/sagan.xlsx"
-            // "args": "./testProj1/pom.xml tmp/testProj1.xlsx"
+            "args": "../BroadleafCommerce/pom.xml tmp/graph.xlsx"
+            // "args": "../sagan/sagan-site/build.gradle tmp/graph.xlsx"
+            // "args": "./testProj1/pom.xml tmp/graph.xlsx"
         }
     ]
 }

@@ -4,12 +4,7 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-
-import org.apache.commons.io.FileUtils;
 
 public class GradleProj implements Project<GradleDep> {
 

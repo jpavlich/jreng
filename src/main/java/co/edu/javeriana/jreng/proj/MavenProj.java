@@ -34,8 +34,16 @@ public class MavenProj implements Project<MavenDep> {
         if (line.strip().isEmpty()) {
             return null;
         }
+        System.out.println(line);
         String[] dep = line.strip().split(":");
-        return new MavenDep(dep[0], dep[1], dep[3], dep[4]);
+        if (dep.length < 5) {
+            return null;
+        }
+        if (dep[3].equals("tests")) {
+            return new MavenDep(dep[0], dep[1], dep[4], dep[5]);
+        } else {
+            return new MavenDep(dep[0], dep[1], dep[3], dep[4]);
+        }
     }
 
     @Override

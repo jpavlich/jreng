@@ -21,7 +21,8 @@ import co.edu.javeriana.jreng.util.Command.Result;
  */
 public interface Project<D extends ProjDep> {
 
-    static String SOURCE_FOLDER = "/src";
+    // static String SOURCE_FOLDER = "/src";
+    static String SOURCE_FOLDER = "";
 
     default void cleanInstall() throws BuildException {
         Result result = Command.run(getCleanInstallCommand(), getProjFile().getParentFile());
@@ -71,8 +72,8 @@ public interface Project<D extends ProjDep> {
         scopeSet.addAll(Arrays.asList(scopes));
 
         List<File> jars = new ArrayList<>();
-        // jars.addAll(getJars());
-        for (ProjDep dep : deps()) {
+        List<D> dependencies = deps();
+        for (ProjDep dep : dependencies) {
             if (scopeSet.isEmpty() || scopeSet.contains(dep.getScope())) {
                 jars.addAll(dep.getJars());
             }
@@ -85,7 +86,8 @@ public interface Project<D extends ProjDep> {
         String cmd = String.format(getDepsCommand(), getProjFile().getAbsolutePath());
         System.out.println(cmd);
         Result result = Command.run(cmd, getProjFile().getParentFile().getAbsoluteFile());
-        for (String line : result.getOutput().subList(2, result.getOutput().size())) {
+        List<String> output = result.getOutput();
+        for (String line : output.subList(2, result.getOutput().size())) {
             D dep = parse(line);
             if (dep != null) {
                 deps.add(dep);

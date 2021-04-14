@@ -64,10 +64,12 @@ public class Catalog {
         try {
             m = this.getClass().getMethod("idOf", obj.getClass());
             return (String) m.invoke(this, obj);
-        } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
+        } catch (UnsolvedSymbolException | NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
                 | InvocationTargetException e) {
-            e.printStackTrace();
-            System.exit(1);
+            // e.printStackTrace();
+            System.err.println(e);
+            // System.exit(1);
+            // return obj.toString();
             return null;
         }
     }
@@ -77,7 +79,12 @@ public class Catalog {
     }
 
     public String idOf(MethodDeclaration method) {
-        return method.resolve().getQualifiedSignature();
+        try {
+            return method.resolve().getQualifiedSignature();
+        } catch (UnsolvedSymbolException e) {
+            System.err.println(e);
+            return null;
+        }
     }
 
     public String idOf(FieldDeclaration field) {
@@ -158,7 +165,12 @@ public class Catalog {
     }
 
     public String idOf(AnnotationExpr a) {
-        return a.resolve().getQualifiedName();
+        try {
+            return a.resolve().getQualifiedName(); 
+        } catch (UnsolvedSymbolException e) {
+            System.err.println(e);
+            return null;
+        }
     }
 
     public String idOf(Parameter param) {

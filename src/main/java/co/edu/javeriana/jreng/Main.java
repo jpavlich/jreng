@@ -12,7 +12,7 @@ public class Main {
 
     public static void main(String[] args) throws IOException, BuildException {
         if (args.length < 2) {
-            System.out.println("arguments: <path to pom.xml> <output file> [-c]");
+            System.out.println("arguments: <path to pom.xml/build.gradle> <output file> [-c]");
             System.exit(1);
         }
         boolean cleanInstall = false;
